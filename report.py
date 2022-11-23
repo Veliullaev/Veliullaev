@@ -208,4 +208,3 @@ class Report:
         pdfkit.from_string(pdf_template, r'report.pdf',
                            configuration=config,
                            options={"enable-local-file-access": ""})
-        print()
