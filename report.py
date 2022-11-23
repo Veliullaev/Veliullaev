@@ -205,6 +205,7 @@ class Report:
         pdf_template = template.render({'profession': self._profession, 'table1': table1, 'table2': table2})
 
         config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
-        pdfkit.from_string(pdf_template, r'C:\Users\Vladislav\PycharmProjects\Python_ElearnTask_06_03\report.pdf',
+        pdfkit.from_string(pdf_template, r'report.pdf',
                            configuration=config,
                            options={"enable-local-file-access": ""})
+        print()
