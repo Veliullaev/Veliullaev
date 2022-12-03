@@ -51,8 +51,8 @@ class DataSet:
 
         Arguments:
             date (str): оригинальная дата.
-
-        Returns (datetime): Преобразованная дата.
+        Returns:
+             Преобразованная дата.
         """
         return datetime.strptime(date, DataSet.original_date_format).strftime(DataSet.date_format)
 
@@ -92,7 +92,7 @@ class Vacancy:
                                     * DataSet.currency_to_rub[self.salary_currency]
 
 
-class UniversalCSVParser:
+class CSVParser:
     """ Класс для работы с CSV файлом.
         Attributes:
             __profession (str): Название профессии.
@@ -107,7 +107,7 @@ class UniversalCSVParser:
     """
 
     @staticmethod
-    def csv_reader(file_name: str):
+    def csv_reader(file_name: str) -> (list,list):
         """Данный метод считывает файл и проводит фильтрацию на соответствие заголовочному списку - столбцов CSV файла.
         Parameters:
             file_name (str): Имя файла.
@@ -188,7 +188,7 @@ class UniversalCSVParser:
         """Заполняет поля класса через консольный ввод из класса ConsoleInput
 
         Returns:
-            UniversalCSVParser instance.
+            CSVParser instance.
         """
         self.__filename, self.__profession = ConsoleInput.get_parameters(self)
         return self
@@ -311,7 +311,7 @@ class UniversalCSVParser:
 class ConsoleInput:
     """Класс для ввода параметров обработки CSV с консоли"""
     @staticmethod
-    def get_parameters(csvParser: UniversalCSVParser):
+    def get_parameters(csvParser: CSVParser):
         """Получает данные для CSV парсинга с консоли
 
         Returns:
@@ -328,7 +328,7 @@ def create_report_card() -> report.Report:
     Returns:
         Объект класса Report с готовыми данными для статистики.
     """
-    csvParser = UniversalCSVParser().create_csv_parser_from_input()
+    csvParser = CSVParser().create_csv_parser_from_input()
     csvParser.createDataSet()
     salary_dynamic_by_year = csvParser.get_salary_dynamic_by_year()
     vacancy_dynamic_by_year = csvParser.get_vacancy_dynamic_by_year()

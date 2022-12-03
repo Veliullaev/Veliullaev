@@ -19,6 +19,11 @@ class DataSet:
     vacancies_objects: list
 
     def __init__(self, file_name: str, vacancies_objects: list):
+        """ Инициализация объекта Dataset для дальнейшей работы с ним посредством класса CSVParser
+                Args:
+                file_name (str): имя обрабатываемого файла.
+                vacancies_objects (list): список объектов типа Vacancy.
+        """
         self.file_name = file_name
         self.vacancies_objects = vacancies_objects
 
@@ -91,7 +96,7 @@ class Vacancy:
         self.published_at = vac_dict['published_at']
 
 
-class UniversalCSVParser:
+class CSVParser:
     """Класс для работы с CSV файлом"""
 
     @staticmethod
@@ -107,7 +112,7 @@ class UniversalCSVParser:
         subDic = {}
         for i in range(len(list_)):
             if str(list_[i]).__contains__('\n') or header_list[i] == "key_skills":
-                element = UniversalCSVParser.clear_excess_from_list(UniversalCSVParser.convert_line_to_list(list_[i]))
+                element = CSVParser.clear_excess_from_list(CSVParser.convert_line_to_list(list_[i]))
                 subDic.update({header_list[i]: element})
             else:
                 subDic.update({header_list[i]: list_[i]})
@@ -123,7 +128,7 @@ class UniversalCSVParser:
         Returns:
             Список с очищенными элементами.
         """
-        return list(map(lambda x: UniversalCSVParser.remove_excess(x), raw_list))
+        return list(map(lambda x: CSVParser.remove_excess(x), raw_list))
 
     @staticmethod
     def remove_excess(raw: str):
@@ -135,7 +140,7 @@ class UniversalCSVParser:
         Returns:
             Очищенная строка
         """
-        clean = re.sub(UniversalCSVParser.__cleaner, '', str(raw)).strip(" ")
+        clean = re.sub(CSVParser.__cleaner, '', str(raw)).strip(" ")
         return re.sub(' +', ' ', clean)
 
     @staticmethod
@@ -202,6 +207,12 @@ class UniversalCSVParser:
 
     @staticmethod
     def csv_reader(file_name: str) -> (list, list):
+        """Данный метод считывает файл и проводит фильтрацию на соответствие заголовочному списку - столбцов CSV файла.
+        Parameters:
+            file_name (str): Имя файла.
+        Returns:
+            Заголовочный список c именами столбцов и список вакансий в виде подсписков.
+        """
         with open(file_name, 'r', encoding="utf-8-sig") as file:
             data = list(reader(file))
             if len(data) == 0:
@@ -215,14 +226,37 @@ class UniversalCSVParser:
             return data[0], vacancies
 
     def csv_filer(self, header_list: list, list_naming: list) -> list:
+        """Данный метод преобразует список вакансий в виде подсписков в список вакансий в виде словарей
+            Parameters:
+                header_list (list): Список столбцов CSV файла.
+                list_naming (list): Список списков, содержащих в себе информацию о вакансиях.
+            Returns:
+                Список вакансий в виде словарей с ключами-столбцами CSV файла и соответствующими значениями.
+        """
         return list(map(lambda x: self.convert_list_to_dict(self.clear_excess_from_list(x), header_list), list_naming))
 
     def format_vacancies(self, data_vacancies: list) -> list:
+        """Форматирует вакансии в удобочитаемый вид
+
+        Parameters:
+            data_vacancies (list) : Список вакансий
+        Returns:
+            list: Отформатированный список вакансий
+        """
         for i in range(len(data_vacancies)):
             data_vacancies[i] = self.formatter(data_vacancies[i])
         return data_vacancies
 
     def translate(self, row: dict, key: str, to_ignore: list):
+        """Переводит поля у вакансий
+
+        Parameters:
+            row (dict): ряд, представляющий собой вакансию
+            key (str): ключ, значение по которому нужно перевести
+            to_ignore (list): игнорируемые ключи при переводе
+        Returns:
+            str: Переведенное поле
+        """
         if not to_ignore.__contains__(key):
             if self.__dicNaming.__contains__(str(row[key])):
                 return {self.__dicNaming[key]: ' '.join(self.__dicNaming[str(row[key])].split())}
@@ -234,9 +268,25 @@ class UniversalCSVParser:
                 return {self.__dicNaming[key]: ' '.join(str(row[key]).split())}
 
     def format_date(self, date: str):
+        """
+        Метод, преобразующий дату в виде original_date_format и возвращающий дату в виде date_format.
+
+        Arguments:
+            date (str): оригинальная дата.
+        Returns:
+            datetime: Преобразованная дата.
+        """
         return datetime.strptime(date, self.__original_date_format).strftime(self.__date_format)
 
     def formatter(self, vacancy: Vacancy):
+        """Форматирует вакансию для вывода в таблице
+
+            Parameters:
+                vacancy (Vacancy): Вакансия
+
+            Returns:
+                dict: Преобразованная в словарь вакансия
+        """
         new_dict = {}
         vacancy.salary.salary_from = format(int(float(vacancy.salary.salary_from)), ',d').replace(',', ' ')
         vacancy.salary.salary_to = format(int(float(vacancy.salary.salary_to)), ',d').replace(',', ' ')
@@ -256,6 +306,12 @@ class UniversalCSVParser:
 
     @staticmethod
     def setup_table(table: PrettyTable, header_list: list):
+        """Настраивает таблицу PrettyTable
+
+            Parameters:
+                table (PrettyTable): Таблица
+                header_list (list): Заголовочный список
+        """
         table.field_names = header_list
         table.border = True
         table.hrules = prettytable.ALL
@@ -264,11 +320,29 @@ class UniversalCSVParser:
 
     @staticmethod
     def cut_long_string(raw: str):
+        """Обрезает строку больше 100 символов
+
+        Parameters:
+            raw (str): Оригинальная строка.
+        Returns:
+            Преобразованная строка.
+        """
         if isinstance(raw, str) and len(raw) > 100:
             return raw[0:100] + '...'
         return raw
 
     def get_table_as_string(self, header_list: list, vac_list: list, column_filter: list, borders: list):
+        """Возвращает таблицу в виде строки для вывода в файл или в консоль
+
+        Parameters:
+            header_list (list): Список заголовков для таблицы
+            vac_list (list): Список вакансий (объектов Vacancy)
+            column_filter (list): Список фильтров по столбцам
+            borders (list): Список границ выводимой таблицы
+
+        Returns:
+            Таблица в виде строки.
+        """
         table = PrettyTable()
         counter = 1
         self.setup_table(table, header_list)
@@ -287,6 +361,14 @@ class UniversalCSVParser:
         return table.get_string(fields=column_filter, start=borders[0] - 1, end=borders[1] - 1)
 
     def get_table_borders(self, input_str: str):
+        """Преобразует входную строку в список границ таблицы
+
+            Parameters:
+                input_str (str): Входная строка в формате "число, число"
+
+            Returns:
+                Список, хранящий границы. Нулевой индекс содержит начало, первый индекс содержит конец.
+        """
         borders = input_str.split()
         for i in borders:
             if not i.isdigit():
@@ -294,11 +376,27 @@ class UniversalCSVParser:
         return list(map(lambda x: int(x), borders))
 
     def get_filters(self, input_str: str):
+        """Преобразует входную строку в фильтр таблицы
+
+            Parameters:
+                input_str (str): Входная строка
+
+            Returns:
+                Список фильтров
+        """
         filts = input_str.split(", ")
         return filts if all(filt in self.__reversedDict for filt in filts) else self.throwError(
             "Параметр фильтрации некорректен")
 
     def get_filtering_parameters(self, args: str):
+        """Преобразует входную строку в параметры для фильтрации
+
+            Parameters:
+                args (str): Строка вида "Параметр: значение", может быть пустой.
+
+            Returns:
+                Кортеж из команды и аргумента.
+        """
         if not args.__contains__(": ") and len(args) != 0:
             print("Формат ввода некорректен")
             exit()
@@ -311,24 +409,73 @@ class UniversalCSVParser:
 
     @staticmethod
     def filter_by_exact_match(parameter: str, argument: str, dataset: DataSet):
+        """Фильтрует список по точному совпадению
+
+            Parameters:
+                parameter (str): Параметр, по которому нужно искать совпадение
+                argument (str): Строка, сравниваемая со значением, полученном через parameter
+                dataset (DataSet): Датасет.
+
+            Returns:
+                Отфильтрованный список по точному совпадению.
+        """
         return list(filter(lambda x: x.__dict__[parameter] == argument, dataset.vacancies_objects))
 
     @staticmethod
     def filter_by_salary_param_match(parameter: str, argument: str, dataset: DataSet):
+        """Фильтрует датасет по точному совпадению зарплаты
+
+            Parameters:
+                parameter (str): Параметр, по которому нужно искать совпадение
+                argument (str): Строка, сравниваемая со значением, полученном через parameter
+                dataset (DataSet): Датасет.
+
+            Returns:
+                Отфильтрованный список по точному совпадению числа.
+        """
         return list(filter(lambda x: x.salary.__dict__[parameter] == argument, dataset.vacancies_objects))
 
     @staticmethod
     def filter_by_salary(parameter: str, salary: str, dataset: DataSet):
+        """Фильтрует датасет по зарплате
+                Parameters:
+                    parameter (str): Параметр, по которому нужно искать совпадение
+                    salary (str): Строка, сравниваемая со значением, полученном через parameter
+                    dataset (DataSet): Датасет.
+
+                Returns:
+                    Отфильтрованный список по зарплате.
+            """
         return list(
             filter(lambda x: float(x.salary.__dict__['salary_from']) <= float(salary) <= float(
                 x.salary.__dict__['salary_to']),
                    dataset.vacancies_objects))
 
     def filter_by_date(self, parameter: str, date: str, dataset: DataSet):
+        """Фильтрует датасет по дате
+
+            Parameters:
+                parameter (str): Параметр, по которому нужно искать совпадение
+                date (str): Дата, с которой сравниваются значения в полученном списке
+                dataset (DataSet): Датасет.
+
+            Returns:
+                Отфильтрованный список по дате.
+        """
         return list(filter(lambda x: self.format_date(x.__dict__[parameter]) == date, dataset.vacancies_objects))
 
     @staticmethod
     def filter_by_list(parameter: str, args: str, dataset: DataSet):
+        """Фильтрует датасет по наличию элементов во вложенном списке
+
+            Parameters:
+                parameter (str): Параметр, по которому нужно искать совпадение
+                args (str): Строка вида "слово, слово, ..., слово"
+                dataset (DataSet): Датасет.
+
+            Returns:
+                Отфильтрованный список по наличию элементов из полученного списка от args в вакансиях.
+        """
         return list(filter(lambda x: all(item in x.__dict__[parameter] for item in args.split(", ")),
                            dataset.vacancies_objects))
 
@@ -345,6 +492,15 @@ class UniversalCSVParser:
         return filtrationDict
 
     def do_filtration(self, dataset: DataSet, cmd_n_args: tuple):
+        """Осуществляет фильтрацию по полученным командам
+
+            Parameters:
+                dataset (DataSet): Датасет.
+                cmd_n_args (tuple): Кортеж  с командой и аргументом
+
+            Returns:
+                Отфильтрованный список словарей-вакансий.
+        """
         cmd = ''
         args = ''
         if cmd_n_args[0] == -1:
@@ -366,10 +522,23 @@ class UniversalCSVParser:
 
     @staticmethod
     def throwError(message: str):
+        """Кидает ошибку и выходит из программы
+
+            Parameters:
+                message (str): Сообщение ошибки
+
+        """
         print(message)
         exit()
 
     def sort_by_lexicographic(self, vacancies_objects: list, paramName: str, isSortReversed=False) -> list:
+        """Совершает лексикографическую сортировку списка словарей-вакансий
+
+            Parameters:
+                vacancies_objects (list): Список вакансий
+                paramName (str): Имя параметра
+                isSortReversed (bool): Совершать ли обратную сортировку
+        """
         if paramName == '':
             return vacancies_objects
         if not (vacancies_objects[0].__dict__.__contains__(paramName) \
@@ -380,6 +549,17 @@ class UniversalCSVParser:
             return vacancies_objects
 
     def sort_by_salary(self, vacancies_objects: list, paramName: str, isSortReversed: bool) -> list:
+        """
+        Сортирует список вакансий по вилке оклада.
+
+        Parameters:
+            vacancies_objects (list): Список вакансий.
+            paramName (str): Неиспользуемое имя.
+            isSortReversed (bool): Определяет, совершать ли обратную сортировку.
+
+        Returns:
+            list: Отсортированный список
+        """
         vacancies_objects.sort(key=lambda x: float(
             (float(x.salary.__dict__['salary_from']) + float(x.salary.__dict__['salary_to'])) * float(
                 self.__currency_to_rub[x.salary.__dict__['salary_currency']]) / 2),
@@ -387,6 +567,17 @@ class UniversalCSVParser:
         return vacancies_objects
 
     def sort_by_salary_param(self, vacancies_objects: list, paramName: str, isSortReversed=False) -> list:
+        """
+        Сортирует список вакансий по параметру оклада.
+
+        Parameters:
+            vacancies_objects (list): Список вакансий.
+            paramName (str): Неиспользуемое имя.
+            isSortReversed (bool): Определяет, совершать ли обратную сортировку.
+
+        Returns:
+            list: Отсортированный список
+        """
         if not vacancies_objects[0].salary.__dict__.__contains__(paramName):
             self.throwError("Параметр сортировки некорректен")
         else:
@@ -396,11 +587,33 @@ class UniversalCSVParser:
             return vacancies_objects
 
     def sort_by_listCount(self, vacancies_objects: list, paramName: str, isSortReversed=False) -> list:
+        """
+        Сортирует список вакансий по параметру и числу элементов в списке значения по параметру.
+
+        Parameters:
+            vacancies_objects (list): Список вакансий.
+            paramName (str): Неиспользуемое имя.
+            isSortReversed (bool): Определяет, совершать ли обратную сортировку.
+
+        Returns:
+            list: Отсортированный список
+        """
         vacancies_objects.sort(key=lambda x: len(x.__dict__[paramName])
         if isinstance(x.__dict__[paramName], list) else 1, reverse=isSortReversed)
         return vacancies_objects
 
     def sort_by_experience(self, vacancies_objects: list, paramName: str, isSortReversed=False) -> list:
+        """
+        Сортирует список вакансий по опыту
+
+        Parameters:
+            vacancies_objects (list): Список вакансий.
+            paramName (str): Неиспользуемое имя.
+            isSortReversed (bool): Определяет, совершать ли обратную сортировку.
+
+        Returns:
+            list: Отсортированный список
+        """
         vacancies_objects.sort(key=lambda x: self.__expDict[x.__dict__['experience_id']],
                                reverse=isSortReversed)
         return vacancies_objects
@@ -423,6 +636,18 @@ class UniversalCSVParser:
 
     def __init__(self, filename, filterParam, sortParam, isSortReversed_bool, table_borders, filters,
                  reversedDict=None):
+        """
+        Инициализирует парсер с параметрами
+
+        Parameters:
+            filename (str): Имя файла
+            filterParam (str): Параметр фильтрации
+            sortParam (str): Параметр сортировки
+            isSortReversed_bool (bool): Сортировать ли в обратном порядке
+            table_borders (list): Границы таблицы
+            filters (list): Включенные в таблицу столбцы
+            reversedDict (dict): Словарь обратного перевода
+        """
         self.__isSortReversed = None
         self.__filename = filename
         self.__filterParam = filterParam
@@ -431,8 +656,14 @@ class UniversalCSVParser:
         self.__table_borders = table_borders
         self.__filters = filters
         self.__reversedDict = reversedDict
+        self.__boolDict = self.__boolDict
+        self.__expDict = self.__expDict
+        self.__parsedTable = self.__parsedTable
+        self.__sortFuncDict = self.__sortFuncDict
+
 
     def __init__(self):
+        """Пустой __init__ для ручного ввода"""
         self.__filename = None
         self.__filterParam = None
         self.__sortParam = None
@@ -442,16 +673,24 @@ class UniversalCSVParser:
         self.__reversedDict = None
 
     def get_filename(self):
+        """Получает имя файла"""
         return self.__filename
 
     def get_reversedDict(self):
+        """Получает обратный словарь перевода"""
         return self.__reversedDict
 
     def get_boolDict(self):
+        """Получает словарь булей"""
         return self.__boolDict
 
     def create_csv_parser_from_input(self):
-        self.__reversedDict = {val: key for (key, val) in UniversalCSVParser.__dicNaming.items()}
+        """Получает CSVParser из консольного ввода
+
+            Returns:
+                CSVParser: Парсер
+        """
+        self.__reversedDict = {val: key for (key, val) in CSVParser.__dicNaming.items()}
         self.__filename, self.__filterParam, self.__sortParam, self.__isSortReversed, self.__table_borders, \
         self.__filters = InputCorrect.get_parameters(self)
         self.__filterParam = self.get_filtering_parameters(self.__filterParam)
@@ -460,6 +699,11 @@ class UniversalCSVParser:
         return self
 
     def get_parsed_table(self) -> str:
+        """Получает распарсенную табличку
+
+            Returns:
+                str: Парсенная табличка
+        """
         if self.__parsedTable is not None:
             return self.__parsedTable
         dataSet = self.createDataSet()
@@ -477,11 +721,21 @@ class UniversalCSVParser:
             return self.__parsedTable
 
     def __str__(self):
+        """Возвращает таблицу в строковом варианте.
+
+            Returns:
+                str: Парсенная табличка.
+        """
         if self.get_parsed_table() is None:
             return ""
         return self.get_parsed_table()
 
     def createDataSet(self):
+        """Создает датасет
+
+            Returns:
+                DataSet: Новый датасет
+        """
         headerAndVacs = self.csv_reader(self.__filename)
         filedCsv = self.csv_filer(headerAndVacs[0], headerAndVacs[1])
         vacancies_objects = list(map(lambda x: Vacancy(x), filedCsv))
@@ -493,11 +747,23 @@ class InputCorrect:
 
     @staticmethod
     def throwError(message: str):
+        """Кидает ошибку и завершает программу.
+
+            Parameters:
+                message (str): Сообщение ошибки.
+        """
         print(message)
         exit()
 
     @staticmethod
-    def get_parameters(csvParser: UniversalCSVParser):
+    def get_parameters(csvParser: CSVParser):
+        """Получает параметры для CSVParser и проверяет их корректность
+
+            Parameters:
+                 csvParser (CSVParser): Объект-Парсер CSV
+            Returns:
+                Кортеж для создания CSVParser
+        """
         filename = input("Введите название файла: ")
         filterParam = input("Введите параметр фильтрации: ")
         sortParam = input("Введите параметр сортировки: ")
@@ -515,10 +781,11 @@ class InputCorrect:
 
 
 def create_table():
-    parser = UniversalCSVParser().create_csv_parser_from_input()
+    """Создает табличку из ввода и печатает её на экран"""
+    parser = CSVParser().create_csv_parser_from_input()
     print(parser.get_parsed_table())
 
 
 if __name__ == '__main__':
-    csvParser = UniversalCSVParser().create_csv_parser_from_input()
+    csvParser = CSVParser().create_csv_parser_from_input()
     print(csvParser.get_parsed_table())
