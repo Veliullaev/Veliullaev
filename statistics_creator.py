@@ -1,19 +1,32 @@
 from csv import reader
 from datetime import datetime
-
-import pdfkit
 import report
-from xlsx2html import xlsx2html
-from jinja2 import Environment, FileSystemLoader
+import doctest
 
 
 class DataSet:
+    """Класс для представления данных о вакансиях.
+    Attributes:
+        file_name (str): Имя обрабатываемого файла.
+        vacancies_objects (list): Список объектов типа Vacancy.
+        currency_to_rub (dict): Словарь валютной конвертации.
+        date_format (str): Формат даты после преобразования.
+        original_date_format (str): Формат даты до преобразования, оригинальный.
+    """
     file_name: str
     vacancies_objects: list
 
     def __init__(self, file_name: str, vacancies_objects: list):
+        """ Инициализация объекта Dataset для дальнейшей работы с ним посредством класса CSVParser
+            Args:
+                file_name (str): имя обрабатываемого файла.
+                vacancies_objects (list): список объектов типа Vacancy.
+        """
         self.file_name = file_name
         self.vacancies_objects = vacancies_objects
+        self.currency_to_rub = self.currency_to_rub
+        self.date_format = self.date_format
+        self.original_date_format = self.original_date_format
 
     currency_to_rub = {
         "AZN": 35.68,
@@ -33,10 +46,29 @@ class DataSet:
 
     @staticmethod
     def format_date(date: str):
+        """
+        Метод, преобразующий дату в виде original_date_format и возвращающий дату в виде date_format.
+
+        Arguments:
+            date (str): оригинальная дата.
+
+        Returns (datetime): Преобразованная дата.
+        """
         return datetime.strptime(date, DataSet.original_date_format).strftime(DataSet.date_format)
 
 
 class Vacancy:
+    """Класс для представления вакансии.
+
+    Attributes:
+        name (str): Название вакансии.
+        salary_from (float): Нижняя граница оклада.
+        salary_to (float): Верхняя граница оклада.
+        salary_currency (str): Название валюты оклада.
+        salary_middle_in_rub (float): Среднее значеие оклада в рублях.
+        area_name (str): Название региона вакансии.
+        published_at (int): Дата публикации вакансии, год.
+    """
     name: str
     salary_from: float
     salary_to: float
@@ -45,41 +77,43 @@ class Vacancy:
     area_name: str
     published_at: int
 
-    def __init__(self, vacDictionary):
-        self.name = vacDictionary['name']
-        self.salary_from = float(vacDictionary['salary_from'])
-        self.salary_to = float(vacDictionary['salary_to'])
-        self.salary_currency = vacDictionary['salary_currency']
-        self.area_name = vacDictionary['area_name']
-        self.published_at = int(DataSet.format_date(vacDictionary['published_at']))
+    def __init__(self, vac_dict: dict):
+        """
+        Parameters:
+            vac_dict (dict): Словарь, храняющий в себе данные для вставки в поля класса Vacancy.
+        """
+        self.name = vac_dict['name']
+        self.salary_from = float(vac_dict['salary_from'])
+        self.salary_to = float(vac_dict['salary_to'])
+        self.salary_currency = vac_dict['salary_currency']
+        self.area_name = vac_dict['area_name']
+        self.published_at = int(DataSet.format_date(vac_dict['published_at']))
         self.salary_middle_in_rub = (self.salary_from + self.salary_to) / 2 \
                                     * DataSet.currency_to_rub[self.salary_currency]
 
 
 class UniversalCSVParser:
-    __currency_to_rub = {
-        "AZN": 35.68,
-        "BYR": 23.91,
-        "EUR": 59.90,
-        "GEL": 21.74,
-        "KGS": 0.76,
-        "KZT": 0.13,
-        "RUR": 1,
-        "UAH": 1.64,
-        "USD": 60.66,
-        "UZS": 0.0055,
-    }
-
-    __headerDict = {}
-
-    def get_currency_to_rub(self):
-        return self.__currency_to_rub;
-
-    __date_format = '%Y'
-    __original_date_format = '%Y-%m-%dT%H:%M:%S+%f'
+    """ Класс для работы с CSV файлом.
+        Attributes:
+            __profession (str): Название профессии.
+            __filename (str): Имя файла.
+            __dataset (DataSet): Датасет, используемый в обработке данных.
+            __salary_dynamic (dict): Словарь, описывающий годовую динамику зарплат.
+            __vacancy_dynamic (dict): Словарь, описывающий годовую динамику вакансий.
+            __salary_profession_dynamic (dict): Словарь, описывающий годовую динамику зарплаты КОНКРЕТНОЙ вакансии.
+            __vacancy_profession_dynamic (dict): Словарь, описывающий годовую динамику КОНКРЕТНОЙ вакансии.
+            __town_salaries (dict): Словарь, описывающий средние зарплаты в городах.
+            __town_vacCounts (dict): Словарь, описывающий число вакансий в городах.
+    """
 
     @staticmethod
-    def csv_reader(file_name: str, profession_name: str):
+    def csv_reader(file_name: str):
+        """Данный метод считывает файл и проводит фильтрацию на соответствие заголовочному списку - столбцов CSV файла.
+        Parameters:
+            file_name (str): Имя файла.
+        Returns:
+            Заголовочный список c именами столбцов и список вакансий в виде подсписков.
+        """
         with open(file_name, 'r', encoding="utf-8-sig") as file:
             data = list(reader(file))
             vacancies = list(filter(lambda x: len(x) == len(data[0])
@@ -87,57 +121,53 @@ class UniversalCSVParser:
             return data[0], vacancies
 
     def csv_filer(self, header_list: list, list_naming: list):
+        """Данный метод преобразует список вакансий в виде подсписков в список вакансий в виде словарей
+        Parameters:
+            header_list (list): Список столбцов CSV файла.
+            list_naming (list): Список списков, содержащих в себе информацию о вакансиях.
+        Returns:
+            Список вакансий в виде словарей с ключами-столбцами CSV файла и соответствующими значениями.
+        """
         return list(map(lambda x: self.convert_list_to_dict(list(x), header_list), list_naming))
 
     @staticmethod
     def convert_list_to_dict(list_: list, header_list: list):
+        """Данный метод преобразует список в словарь по ключам-столбцам CSV файла.
+
+        Parameters:
+            list_ (list): список, в котором последовательно содержится информация о вакансии.
+            header_list: упорядоченный список столбцов CSV файла.
+        Returns:
+            Словарь, где ключ - имя столбца из CSV файла.
+        """
         subDic = {}
         for i in range(len(list_)):
             subDic.update({header_list[i]: list_[i]})
         return subDic
 
-    def format_date(self, date: str):
-        return datetime.strptime(date, self.__original_date_format).strftime(self.__date_format)
-
     @staticmethod
     def throwError(message: str):
-        print(message)
-        exit()
+        """Данный метод кидает ошибку.
+        Parameters:
+            message (str): Текст ошибки.
+        """
+        raise message
 
     def __init__(self, filename, profession):
-        self.__isSortReversed = None
+        """Инициализация CSV-Парсера
+        Parameters:
+            filename (str): Название файла
+            profession (str): Имя профессии
+        """
         self.__profession = profession
         self.__filename = filename
         self.__dataset = None
-        self.__header = None
-
-    def __init__(self):
-        self.__filename = None
-
-    def get_filename(self):
-        return self.__filename
-
-    def get_reversedDict(self):
-        return self.__reversedDict
-
-    def get_boolDict(self):
-        return self.__boolDict
-
-    def create_csv_parser_from_input(self):
-        self.__filename, self.__profession = InputCorrect.get_parameters(self)
-        return self
-
-    def get_profession(self):
-        return self.__profession
-
-    def createDataSet(self):
-        headerAndVacs = self.csv_reader(self.__filename, self.__profession)
-        filedCsv = self.csv_filer(headerAndVacs[0], headerAndVacs[1])
-        vacancies_objects = list(map(lambda x: Vacancy(x), filedCsv))
-        dataSet = DataSet(self.__filename, vacancies_objects)
-        self.__dataset = dataSet
-        self.__header = headerAndVacs[0]
-        return dataSet
+        self.__salary_dynamic = {}
+        self.__vacancy_dynamic = {}
+        self.__salary_profession_dynamic = {}
+        self.__vacancy_profession_dynamic = {}
+        self.__town_salaries = {}
+        self.__town_vacCounts = {}
 
     __salary_dynamic = {}
     __vacancy_dynamic = {}
@@ -146,7 +176,53 @@ class UniversalCSVParser:
     __town_salaries = {}
     __town_vacCounts = {}
 
+    def __init__(self):
+        """Пустой __init__ для заполнения полей с помощью create_csv_parser_from_input"""
+        self.__filename = None
+
+    def get_filename(self):
+        """Получение имени обрабатываемого файла"""
+        return self.__filename
+
+    def create_csv_parser_from_input(self):
+        """Заполняет поля класса через консольный ввод из класса ConsoleInput
+
+        Returns:
+            UniversalCSVParser instance.
+        """
+        self.__filename, self.__profession = ConsoleInput.get_parameters(self)
+        return self
+
+    def get_profession(self):
+        """
+        Returns:
+            Название профессии.
+        """
+        return self.__profession
+
+    def createDataSet(self):
+        """Данный метод создает датасет, в процессе получая объект класса DataSet.
+
+        Returns:
+            Объект класса DataSet.
+        """
+        headerAndVacs = self.csv_reader(self.__filename)
+        """Получаем заголовок - список столбцов и вакансии в виде списка списков"""
+        filedCsv = self.csv_filer(headerAndVacs[0], headerAndVacs[1])
+        """Формируем список словарей-вакансий"""
+        vacancies_objects = list(map(lambda x: Vacancy(x), filedCsv))
+        """Преобразуем список словарей в список Vacancy"""
+        dataSet = DataSet(self.__filename, vacancies_objects)
+        self.__dataset = dataSet
+        return dataSet
+
     def get_salary_dynamic_by_year(self) -> dict:
+        """Данный метод создает словарь динамики зарплат по годам вида {год: средняя зарплата}
+
+        Returns:
+            Словарь динамики зарплат по годам вида {год: средняя зарплата}
+        """
+        """Также заполняет словарь динамики вакансий по годам"""
         for vacancy in self.__dataset.vacancies_objects:
             if self.__vacancy_dynamic.__contains__(vacancy.published_at) \
                     and self.__salary_dynamic.__contains__(vacancy.published_at):
@@ -160,13 +236,27 @@ class UniversalCSVParser:
         return self.__salary_dynamic
 
     def get_vacancy_dynamic_by_year(self) -> dict:
+        """Возвращает словарь динамики вакансий по годам вида {год: число вакансий}"""
+        if self.__salary_dynamic == {}:
+            self.get_salary_dynamic_by_year()
         return self.__vacancy_dynamic
 
     def get_salary_dynamic_profession(self) -> dict:
+        """Возвращает словарь динамики зарплат для конкретной профессии и
+        заполняет словарь динамики числа вакансий для конкретной профессии
+
+        Returns:
+              Готовый словарь с годовой динамикой зарплат для конкретной профессии.
+        """
+
+        """Фильтруем список всех вакансий по имени конкретной профессии"""
         filtered = list(
             filter(lambda x: x.name.__contains__(self.__profession), self.__dataset.vacancies_objects))
+        """Создаем словари по годовому распределению из общих данных (забираем ключи-года)"""
         self.__salary_profession_dynamic = dict(zip(self.__salary_dynamic.keys(), [0]))
         self.__vacancy_profession_dynamic = dict(zip(self.__salary_dynamic.keys(), [0]))
+
+        """Заполняем словари __salary_profession_dynamic и __vacancy_profession_dynamic"""
         for vacancy in filtered:
             if self.__vacancy_profession_dynamic.__contains__(vacancy.published_at) \
                     and self.__salary_profession_dynamic.__contains__(vacancy.published_at):
@@ -182,9 +272,15 @@ class UniversalCSVParser:
         return self.__salary_profession_dynamic
 
     def get_vacancy_dynamic_profession(self) -> dict:
+        """Возвращает словарь динамики числа вакансий для конкретной профессии"""
         return self.__vacancy_profession_dynamic
 
     def get_salary_towns_levels(self) -> dict:
+        """Возвращает словарь средних зарплат по городам и заполняет словарь долей вакансий по городам.
+
+        Returns:
+            Отсортированный словарь средних зарплат по городам, число вакансий которых составляет более и равно 1%
+        """
         for vacancy in self.__dataset.vacancies_objects:
             if self.__town_vacCounts.__contains__(vacancy.area_name):
                 self.__town_salaries[vacancy.area_name] += vacancy.salary_middle_in_rub
@@ -201,28 +297,37 @@ class UniversalCSVParser:
         return dict(sorted(self.__town_salaries.items(), key=lambda x: x[1], reverse=True))
 
     def get_vacancies_towns_levels(self) -> dict:
+        """Преобразует и форматирует словарь долей вакансий по городам
 
+        Returns:
+            Отсортированный словарь долей вакансий по городам с обрезанными значениями до четвертого знака.
+        """
         finalised = dict(sorted(self.__town_vacCounts.items(), key=lambda x: (-x[1])))
         for vac in finalised:
             finalised[vac] = round((self.__town_vacCounts[vac] / len(self.__dataset.vacancies_objects)), 4)
         return finalised
 
 
-class InputCorrect:
-
-    @staticmethod
-    def throwError(message: str):
-        print(message)
-        exit()
-
+class ConsoleInput:
+    """Класс для ввода параметров обработки CSV с консоли"""
     @staticmethod
     def get_parameters(csvParser: UniversalCSVParser):
+        """Получает данные для CSV парсинга с консоли
+
+        Returns:
+            Кортеж с названием файла и именем профессии.
+        """
         filename = input("Введите название файла: ")
         profession = input("Введите название профессии: ")
         return filename, profession
 
 
 def create_report_card() -> report.Report:
+    """Метод, создающий карточку отчёта класса Report
+
+    Returns:
+        Объект класса Report с готовыми данными для статистики.
+    """
     csvParser = UniversalCSVParser().create_csv_parser_from_input()
     csvParser.createDataSet()
     salary_dynamic_by_year = csvParser.get_salary_dynamic_by_year()
@@ -238,6 +343,9 @@ def create_report_card() -> report.Report:
 
 
 def generate_statistics():
+    """Метод, генерирующий Excel файл, графики и pdf файл со статистикой из полученных данных в ходе
+    работы create_report_card
+    """
     reportCard = create_report_card()
     # печать данных для статистики
     reportCard.print_statistics()

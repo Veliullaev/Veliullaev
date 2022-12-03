@@ -1,7 +1,4 @@
 import itertools
-
-# import main
-import matplotlib
 import pdfkit
 from jinja2 import Environment, FileSystemLoader
 from openpyxl.styles import Border, Side, Font
@@ -12,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from xlsx2html import xlsx2html
 
+"""Модуль для преобразования статистических данных в удобочитаемый вид."""
+
 _thin_border = Border(left=Side(style='thin'),
                       right=Side(style='thin'),
                       top=Side(style='thin'),
@@ -19,6 +18,11 @@ _thin_border = Border(left=Side(style='thin'),
 
 
 def thin_border_all_cells(sheet: worksheet.Worksheet):
+    """Метод обводки непустых ячеек.
+
+    Parameters:
+        sheet (worksheet.Worksheet): лист Excel
+    """
     for i in sheet.__iter__():
         for j in i:
             if j.value == "":
@@ -27,6 +31,11 @@ def thin_border_all_cells(sheet: worksheet.Worksheet):
 
 
 def adjust_columns_width(sheet: worksheet.Worksheet):
+    """Метод подгонки шырины ячеек под самую длинную строку в столбце
+
+    Parameters:
+        sheet (worksheet.Worksheet): лист Excel
+    """
     column_widths = [0] * len(list(sheet.columns))
     for i, column in enumerate(sheet.columns):
         for cell in column:
@@ -37,6 +46,12 @@ def adjust_columns_width(sheet: worksheet.Worksheet):
 
 
 def format_worksheets(vac_statistics: worksheet.Worksheet, town_statistics: worksheet.Worksheet):
+    """Метод проводит форматирование листов Excel со статистикой по вакансиям и городам
+
+        Parameters:
+            vac_statistics (worksheet.Worksheet): лист со статистикой по профессиям
+            town_statistics (worksheet.Worksheet): лист со статистикой по городам
+    """
     # задание процентовки для статистики по городам (доли вакансий)
     percentages = town_statistics.iter_cols(min_col=5, max_col=5, min_row=2, max_row=town_statistics.max_row)
     for i in percentages:
@@ -64,10 +79,26 @@ def format_worksheets(vac_statistics: worksheet.Worksheet, town_statistics: work
 
 
 def get_worksheet(ws) -> worksheet.Worksheet:
+    """Метод, чтобы PyCharm мог адекватно распознавать листы Excel как листы Excel
+
+    Parameters:
+        ws: Лист Excel
+
+    Returns:
+        Явный лист Excel.
+    """
     return ws
 
 
-def convert_sheet_to_html_table(sheetname: str, filename="report.xlsx"):
+def convert_sheet_to_html_table(sheetname: str):
+    """Метод, преобразующий лист Excel в HTML разметку
+
+        Parameters:
+            sheetname (str): Excel лист
+
+        Returns:
+            Строка HTML-разметки с готовой таблицей.
+    """
     out_stream = xlsx2html('report.xlsx', sheet=sheetname)
     out_stream.seek(0)
     years = out_stream.read()
@@ -77,10 +108,32 @@ def convert_sheet_to_html_table(sheetname: str, filename="report.xlsx"):
 
 
 class Report:
+    """Класс для создания наглядной статистики в виде Excel, картинки и PDF
+
+        Attributes:
+            _profession (str): Имя профессии.
+            _salary_dynamic_by_year (dict): Словарь динамики зарплат по годам.
+            _vacancy_dynamic_by_year (dict): Словарь динамики числа вакансий по годам.
+            _salary_dynamic_profession (dict): Словарь динамики зарплат по годам для конкретной профессии.
+            _vacancy_dynamic_profession (dict): Словарь динамики числа вакансий по годам для конкретной профессии..
+            _salary_town (dict): Словарь уровня средних зарплат по городам.
+            _vacancy_town (dict): Словарь уровня долей вакансий по городам.
+    """
 
     def __init__(self, profession: str, salary_dynamic_by_year: dict, vacancy_dynamic_by_year: dict,
                  salary_dynamic_profession: dict,
                  vacancy_dynamic_profession: dict, salary_town: dict, vacancy_town: dict):
+        """Инициализирует класс Report
+
+            Parameters:
+                profession (str): Имя профессии.
+                salary_dynamic_by_year (dict): Словарь динамики зарплат по годам.
+                vacancy_dynamic_by_year (dict): Словарь динамики числа вакансий по годам.
+                salary_dynamic_profession (dict): Словарь динамики зарплат по годам для конкретной профессии.
+                vacancy_dynamic_profession (dict): Словарь динамики числа вакансий по годам для конкретной профессии..
+                salary_town (dict): Словарь уровня средних зарплат по городам.
+                vacancy_town (dict): Словарь уровня долей вакансий по городам.
+        """
         self._profession = profession
         self._salary_dynamic_by_year = salary_dynamic_by_year
         self._vacancy_dynamic_by_year = vacancy_dynamic_by_year
@@ -90,6 +143,8 @@ class Report:
         self._vacancy_town = vacancy_town
 
     def generate_excel(self):
+        """Генерирует Excel файл из словарей статистики"""
+
         data_vacs = [["Год", "Средняя зарплата", format(f"Средняя зарплата - {self._profession}"),
                       "Количество вакансий", f"Количество вакансий - {self._profession}"]]
 
@@ -119,6 +174,7 @@ class Report:
         workbook.save("report.xlsx")
 
     def print_statistics(self):
+        """Печатает статистику по профессиям"""
         print("Динамика уровня зарплат по годам: ", end="")
         print(self._salary_dynamic_by_year)
         print("Динамика количества вакансий по годам: ", end="")
@@ -133,6 +189,7 @@ class Report:
         print(dict(itertools.islice(self._vacancy_town.items(), 10)))
 
     def generate_image(self):
+        """Генерирует картинку с графиками, отражающими данные о профессиях."""
         fig, ((salaries_year, vacancies_year), (town_salaries, town_vacancies)) = plt.subplots(2, 2)
         self._initialize_salary_stats(salaries_year)
         self._initialize_vacancies_stats(vacancies_year)
@@ -142,6 +199,7 @@ class Report:
         fig.savefig("graph.png")
 
     def _initialize_salary_stats(self, salaries_year):
+        """Инициализирует график статистики зарплат"""
         years = list(self._salary_dynamic_by_year.keys())
         average_means = list(self._salary_dynamic_by_year.values())
         profession_means = list(self._salary_dynamic_profession.values())
@@ -156,6 +214,7 @@ class Report:
         salaries_year.grid(axis='y')
 
     def _initialize_vacancies_stats(self, vacancies_year):
+        """Инициализирует график статистики по вакансиям"""
         years = list(self._salary_dynamic_by_year.keys())
         totalVacs = list(self._vacancy_dynamic_by_year.values())
         professionVacs = list(self._vacancy_dynamic_profession.values())
@@ -173,6 +232,7 @@ class Report:
         vacancies_year.grid(axis='y')
 
     def _initialize_town_salary_stats(self, town_salaries):
+        """Инициализирует график статистики по городам"""
         towns_dict = dict(itertools.islice(self._salary_town.items(), 10))
         salaries = list(towns_dict.values())
         towns = list(towns_dict.keys())
@@ -186,6 +246,7 @@ class Report:
         town_salaries.grid(axis='x')
 
     def _initialize_town_vac_stats(self, town_vacs):
+        """Инициализирует график статистики по долям вакансий в городах"""
         towns_dict = dict(itertools.islice(self._vacancy_town.items(), 10))
         vacancies_count = list(towns_dict.values())
         vacancies_count.append(1 - sum(vacancies_count))
@@ -198,12 +259,14 @@ class Report:
         town_vacs.axis('equal')
 
     def generate_pdf(self):
+        """Генерирует pdf файл через конвертацию контента (excel листы и картинка со статистикой) в HTML разметку
+        и конвертацию в PDF"""
         table1 = convert_sheet_to_html_table("Статистика по годам")
         table2 = convert_sheet_to_html_table("Статистика по городам")
         env = Environment(loader=FileSystemLoader('.'))
         template = env.get_template("pdf_template.html")
         pdf_template = template.render({'profession': self._profession, 'table1': table1, 'table2': table2})
-
+        # Здесь поставьте свой путь к wkhtmltopdf.
         config = pdfkit.configuration(wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
         pdfkit.from_string(pdf_template, r'report.pdf',
                            configuration=config,
