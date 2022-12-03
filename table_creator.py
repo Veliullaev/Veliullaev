@@ -5,6 +5,8 @@ from typing import Dict, Any, Pattern
 from prettytable import PrettyTable
 import prettytable
 from datetime import datetime
+import unittest
+import doctest
 
 """Модуль, создающий таблицу с вакансиями"""
 
@@ -37,8 +39,8 @@ class Salary:
         salary_gross (str): Обозначение налогового обложения.
         formatted_salary (str): Отформатированный оклад.
     """
-    salary_from: str
-    salary_to: str
+    salary_from: float
+    salary_to: float
     salary_gross: str
     salary_currency: str
     formatted_salary: str
