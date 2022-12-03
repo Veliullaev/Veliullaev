@@ -178,8 +178,9 @@ class UniversalCSVParser:
                                                "UZS": "Узбекский сум",
                                                '': ''}
 
-    __grossDict: dict[str, str] = {'False': 'С вычетом налогов', 'True': 'Без вычета налогов', 'FALSE': 'С вычетом налогов',
-                   'TRUE': 'Без вычета налогов'}
+    __grossDict: dict[str, str] = {'False': 'С вычетом налогов', 'True': 'Без вычета налогов',
+                                   'FALSE': 'С вычетом налогов',
+                                   'TRUE': 'Без вычета налогов'}
 
     __currency_to_rub: dict[str, float | int] = {
         "AZN": 35.68,
@@ -511,6 +512,11 @@ class InputCorrect:
         if is_sort_reversed_bool == -1:
             InputCorrect.throwError("Порядок сортировки задан некорректно")
         return filename, filterParam, sortParam, is_sort_reversed_bool, table_borders, filters
+
+
+def create_table():
+    parser = UniversalCSVParser().create_csv_parser_from_input()
+    print(parser.get_parsed_table())
 
 
 if __name__ == '__main__':
