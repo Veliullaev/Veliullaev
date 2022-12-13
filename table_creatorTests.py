@@ -21,6 +21,12 @@ class SalaryTest(unittest.TestCase):
 
     def test_currency(self):
         self.assertEqual(self.testcase.salary_currency, 'RUR')
+        self.assertDictEqual({'salary_from': 10, 'salary_to': 20, 'salary_gross': 'true',
+                       'salary_currency': 'RUR'}, {'salary_from': 10, 'salary_to': 20, 'salary_gross': 'true',
+                       'salary_currency': 'RUR'})
+        i = self.testcase.__dict__
+        #TODO: assertEqual для функций вне CSV, общая проходка для мегаметодов и классов
+        #TODO: общий тест для CSV
 
 
 class VacancyTest(unittest.TestCase):
