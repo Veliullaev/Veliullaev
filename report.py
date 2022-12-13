@@ -142,6 +142,27 @@ class Report:
         self._salary_town = salary_town
         self._vacancy_town = vacancy_town
 
+    def get_profession(self):
+        return self._profession
+
+    def get_salary_dynamic_by_year(self):
+        return self._salary_dynamic_by_year
+
+    def get_vacancy_dynamic_by_year(self):
+        return self._vacancy_dynamic_by_year
+
+    def get_salary_dynamic_profession(self):
+        return self._salary_dynamic_profession
+
+    def get_vacancy_dynamic_profession(self):
+        return self._vacancy_dynamic_profession
+
+    def get_salary_town(self):
+        return self._salary_town
+
+    def get_vacancy_town(self):
+        return self._vacancy_town
+
     def generate_excel(self):
         """Генерирует Excel файл из словарей статистики"""
 
@@ -271,3 +292,21 @@ class Report:
         pdfkit.from_string(pdf_template, r'report.pdf',
                            configuration=config,
                            options={"enable-local-file-access": ""})
+
+
+def merge_reports(first: Report, second: Report):
+    prof = first.get_profession()
+    #TODO: надо починить это дело
+    return Report(profession
+                  =prof,
+                  salary_dynamic_by_year
+                  =first.get_salary_dynamic_by_year().update(second.get_salary_dynamic_by_year()),
+                  salary_dynamic_profession
+                  =first.get_salary_dynamic_profession().update(second.get_salary_dynamic_profession()),
+                  vacancy_dynamic_profession
+                  =first.get_vacancy_dynamic_profession().update(second.get_vacancy_dynamic_profession()),
+                  vacancy_dynamic_by_year
+                  =first.get_vacancy_dynamic_by_year().update(second.get_vacancy_dynamic_by_year()),
+                  vacancy_town={},
+                  salary_town={})
+

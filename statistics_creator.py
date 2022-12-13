@@ -95,7 +95,7 @@ class Vacancy:
 class CSVParser:
     """ Класс для работы с CSV файлом.
         Attributes:
-            __profession (str): Название профессии.
+            _profession (str): Название профессии.
             __filename (str): Имя файла.
             __dataset (DataSet): Датасет, используемый в обработке данных.
             __salary_dynamic (dict): Словарь, описывающий годовую динамику зарплат.
@@ -107,7 +107,7 @@ class CSVParser:
     """
 
     @staticmethod
-    def csv_reader(file_name: str) -> (list,list):
+    def csv_reader(file_name: str) -> (list, list):
         """Данный метод считывает файл и проводит фильтрацию на соответствие заголовочному списку - столбцов CSV файла.
         Parameters:
             file_name (str): Имя файла.
@@ -159,7 +159,7 @@ class CSVParser:
             filename (str): Название файла
             profession (str): Имя профессии
         """
-        self.__profession = profession
+        self._profession = profession
         self.__filename = filename
         self.__dataset = None
         self.__salary_dynamic = {}
@@ -176,9 +176,9 @@ class CSVParser:
     __town_salaries = {}
     __town_vacCounts = {}
 
-    def __init__(self):
-        """Пустой __init__ для заполнения полей с помощью create_csv_parser_from_input"""
-        self.__filename = None
+    # def __init__(self):
+    #    """Пустой __init__ для заполнения полей с помощью create_csv_parser_from_input"""
+    #    self.__filename = None
 
     def get_filename(self):
         """Получение имени обрабатываемого файла"""
@@ -190,7 +190,7 @@ class CSVParser:
         Returns:
             CSVParser instance.
         """
-        self.__filename, self.__profession = ConsoleInput.get_parameters(self)
+        self.__filename, self._profession = ConsoleInput.get_parameters(self)
         return self
 
     def get_profession(self):
@@ -198,7 +198,10 @@ class CSVParser:
         Returns:
             Название профессии.
         """
-        return self.__profession
+        return self._profession
+
+    def set_profession(self, new_profession: str):
+        self._profession = new_profession
 
     def createDataSet(self):
         """Данный метод создает датасет, в процессе получая объект класса DataSet.
@@ -251,7 +254,7 @@ class CSVParser:
 
         """Фильтруем список всех вакансий по имени конкретной профессии"""
         filtered = list(
-            filter(lambda x: x.name.__contains__(self.__profession), self.__dataset.vacancies_objects))
+            filter(lambda x: x.name.__contains__(self._profession), self.__dataset.vacancies_objects))
         """Создаем словари по годовому распределению из общих данных (забираем ключи-года)"""
         self.__salary_profession_dynamic = dict(zip(self.__salary_dynamic.keys(), [0]))
         self.__vacancy_profession_dynamic = dict(zip(self.__salary_dynamic.keys(), [0]))
@@ -310,6 +313,7 @@ class CSVParser:
 
 class ConsoleInput:
     """Класс для ввода параметров обработки CSV с консоли"""
+
     @staticmethod
     def get_parameters(csvParser: CSVParser):
         """Получает данные для CSV парсинга с консоли
@@ -322,13 +326,23 @@ class ConsoleInput:
         return filename, profession
 
 
-def create_report_card() -> report.Report:
+def create_report_card(isConsoleInput: bool, file_name: str, profession_name: str,
+                       results : list) -> report.Report:
     """Метод, создающий карточку отчёта класса Report
+
+    Arguments:
+        isConsoleInput(bool): отвечает за то, нужно ли будет пользователю вводить аргументы для команды
+        file_name(str): имя файла если не нужно вводить с консоли
+        profession_name(str): название профессии
+        results(list): quick hack для мультитрединга
 
     Returns:
         Объект класса Report с готовыми данными для статистики.
     """
-    csvParser = CSVParser().create_csv_parser_from_input()
+    if isConsoleInput:
+        csvParser = CSVParser().create_csv_parser_from_input()
+    else:
+        csvParser = CSVParser(filename=file_name, profession=profession_name)
     csvParser.createDataSet()
     salary_dynamic_by_year = csvParser.get_salary_dynamic_by_year()
     vacancy_dynamic_by_year = csvParser.get_vacancy_dynamic_by_year()
@@ -337,9 +351,12 @@ def create_report_card() -> report.Report:
     salary_town = csvParser.get_salary_towns_levels()
     vacancy_town = csvParser.get_vacancies_towns_levels()
 
+    result = report.Report(csvParser.get_profession(), salary_dynamic_by_year, vacancy_dynamic_by_year,
+                           salary_dynamic_profession, vacancy_dynamic_profession, salary_town, vacancy_town)
+    results.append(result)
+
     # создание карточки отчёта
-    return report.Report(csvParser.get_profession(), salary_dynamic_by_year, vacancy_dynamic_by_year,
-                         salary_dynamic_profession, vacancy_dynamic_profession, salary_town, vacancy_town)
+    return result
 
 
 def generate_statistics():
