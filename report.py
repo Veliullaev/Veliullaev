@@ -296,17 +296,21 @@ class Report:
 
 def merge_reports(first: Report, second: Report):
     prof = first.get_profession()
+    salary_dynamic_by_year = first.get_salary_dynamic_by_year().update(second.get_vacancy_dynamic_by_year())
+
     #TODO: надо починить это дело
     return Report(profession
                   =prof,
                   salary_dynamic_by_year
-                  =first.get_salary_dynamic_by_year().update(second.get_salary_dynamic_by_year()),
+                  =salary_dynamic_by_year,
                   salary_dynamic_profession
-                  =first.get_salary_dynamic_profession().update(second.get_salary_dynamic_profession()),
+                  =first.get_salary_dynamic_profession(),
                   vacancy_dynamic_profession
-                  =first.get_vacancy_dynamic_profession().update(second.get_vacancy_dynamic_profession()),
+                  =first.get_vacancy_dynamic_profession(),
                   vacancy_dynamic_by_year
-                  =first.get_vacancy_dynamic_by_year().update(second.get_vacancy_dynamic_by_year()),
+                  =first.get_vacancy_dynamic_by_year(),
                   vacancy_town={},
                   salary_town={})
 
+def another_merge_reports(first: Report, second: Report):
+    return

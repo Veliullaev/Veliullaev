@@ -5,29 +5,51 @@
 # Python program to illustrate the concept
 # of threading
 # importing the threading module
-import threading
+import multiprocessing
 import os
 import statistics_creator
 import report
+import queue
 
 
-def compile_result(threads: list, profession: str) -> report.Report:
+def create_report_card(isConsoleInput: bool, file_name: str, profession_name: str,
+                       res: list, queue: multiprocessing.Queue) -> report.Report:
+    result = statistics_creator.create_report_card(isConsoleInput=isConsoleInput, file_name=file_name,
+                                                   profession_name=profession_name, results=res)
+    global results
+    queue.put(result)
+
+
+def compile_result(queue: multiprocessing.Queue, profession: str) -> report.Report:
     """
-    Собирает результат со множества потоков в один
+    Собирает результат со множества процессоров в один
 
     Arguments:
-        threads(list): список потоков
+        queue(multiprocessing.Queue): очередь результатов исполнения программы
         profession(str): название профессии
 
     Returns:
         Report, готовый для дальнейшей обработки в файл.
     """
+    salary_dynamic_by_year = {}
+    salary_dynamic_profession = {}
+    vacancy_dynamic_by_year = {}
+    vacancy_dynamic_profession = {}
+    global count
+    for other in iter(queue.get, None):
+        count -= 1
+        salary_dynamic_by_year.update(other.get_salary_dynamic_by_year())
+        salary_dynamic_profession.update(other.get_salary_dynamic_profession())
+        vacancy_dynamic_by_year.update(other.get_vacancy_dynamic_by_year())
+        vacancy_dynamic_profession.update(other.get_vacancy_dynamic_profession())
+        if count == 0:
+            break
+
     final = report.Report(profession=profession,
-                          salary_dynamic_profession={},
-                          salary_town={}, salary_dynamic_by_year={},
-                          vacancy_town={}, vacancy_dynamic_profession={}, vacancy_dynamic_by_year={})
-    for i in threads:
-        final = report.merge_reports(final, i)
+                          salary_dynamic_profession=salary_dynamic_profession,
+                          salary_town={}, salary_dynamic_by_year=salary_dynamic_by_year,
+                          vacancy_town={}, vacancy_dynamic_profession=vacancy_dynamic_profession,
+                          vacancy_dynamic_by_year=vacancy_dynamic_by_year)
     return final
 
 
@@ -39,21 +61,18 @@ if __name__ == "__main__":
 
     threads = []
     results = []
-    # creating thread
+    q = multiprocessing.Queue(maxsize=20)
+    count = len(csvList)
     for i in csvList:
-        # t = threading.Thread(target=statistics_creator.create_report_card(False, profession_name=profName,
-        #                                                                  file_name=splittedDir+i,))
-        # parser_ = statistics_creator.CSVParser(filename=splittedDir+i, profession=profName)
-
-        t = threading.Thread(target=statistics_creator.create_report_card, args=(False, splittedDir + i, profName,
-                                                                                 results))
+        t = multiprocessing.Process(target=create_report_card,
+                                    args=(False, splittedDir + i, profName,
+                                          results, q,))
         t.start()
         threads.append(t)
 
     for i in threads:
         t.join()
 
-    finalRes = compile_result(threads=results, profession=profName)
+    finalRes = compile_result(queue=q, profession=profName)
 
-    # both threads completely executed
-    print("Done!")
+    print("Анализ данных завершен!")

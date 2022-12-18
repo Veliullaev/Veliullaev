@@ -327,7 +327,7 @@ class ConsoleInput:
 
 
 def create_report_card(isConsoleInput: bool, file_name: str, profession_name: str,
-                       results : list) -> report.Report:
+                       results: list) -> report.Report:
     """Метод, создающий карточку отчёта класса Report
 
     Arguments:
