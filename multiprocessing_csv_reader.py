@@ -9,6 +9,7 @@ import multiprocessing
 import os
 import statistics_creator
 import report
+import cProfile
 import queue
 
 
@@ -54,6 +55,8 @@ def compile_result(queue: multiprocessing.Queue, profession: str) -> report.Repo
 
 
 if __name__ == "__main__":
+    profiler = cProfile.Profile()
+    profiler.enable()
     currpath = os.path.dirname(__file__)  # получаем директорию, где запущен скрипт
     splittedDir = currpath + "/year_splitted_files/"
     csvList = os.listdir(splittedDir)
@@ -76,3 +79,8 @@ if __name__ == "__main__":
     finalRes = compile_result(queue=q, profession=profName)
 
     print("Анализ данных завершен!")
+    profiler.disable()
+    profiler.dump_stats("example.stats")
+    import pstats
+    stats = pstats.Stats("example.stats").sort_stats("tottime")
+    stats.print_stats()

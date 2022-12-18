@@ -54,7 +54,8 @@ class DataSet:
         Returns:
              Преобразованная дата.
         """
-        return datetime.strptime(date, DataSet.original_date_format).strftime(DataSet.date_format)
+        #return datetime.strptime(date, DataSet.original_date_format).strftime(DataSet.date_format)
+        return date[0:4]
 
 
 class Vacancy:
@@ -326,8 +327,8 @@ class ConsoleInput:
         return filename, profession
 
 
-def create_report_card(isConsoleInput: bool, file_name: str, profession_name: str,
-                       results: list) -> report.Report:
+def create_report_card(isConsoleInput: bool, file_name = None, profession_name = None,
+                       results= []) -> report.Report:
     """Метод, создающий карточку отчёта класса Report
 
     Arguments:
@@ -340,9 +341,9 @@ def create_report_card(isConsoleInput: bool, file_name: str, profession_name: st
         Объект класса Report с готовыми данными для статистики.
     """
     if isConsoleInput:
-        csvParser = CSVParser().create_csv_parser_from_input()
-    else:
-        csvParser = CSVParser(filename=file_name, profession=profession_name)
+        file_name = input("Введите название файла: ")
+        profession_name = input("Введите название профессии: ")
+    csvParser = CSVParser(filename=file_name, profession=profession_name)
     csvParser.createDataSet()
     salary_dynamic_by_year = csvParser.get_salary_dynamic_by_year()
     vacancy_dynamic_by_year = csvParser.get_vacancy_dynamic_by_year()
@@ -363,7 +364,15 @@ def generate_statistics():
     """Метод, генерирующий Excel файл, графики и pdf файл со статистикой из полученных данных в ходе
     работы create_report_card
     """
-    reportCard = create_report_card()
+    import cProfile
+    profiler = cProfile.Profile()
+    profiler.enable()
+    reportCard = create_report_card(True)
+    profiler.disable()
+    profiler.dump_stats("example.stats")
+    import pstats
+    stats = pstats.Stats("example.stats").sort_stats("tottime")
+    stats.print_stats()
     # печать данных для статистики
     reportCard.print_statistics()
     # генерация эксель-файла
@@ -372,3 +381,5 @@ def generate_statistics():
     reportCard.generate_image()
     # генерация pdf'ки
     reportCard.generate_pdf()
+
+generate_statistics()
