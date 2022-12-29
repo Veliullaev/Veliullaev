@@ -12,3 +12,11 @@ CSV парсер с возможностью формирования докум
 Производительность с мультипроцессингом
 
 ![multitprocessing](https://user-images.githubusercontent.com/118894144/208313151-f0ab955e-c229-4aec-a5b3-ad5843703f59.png)
+
+Частотность валют
+
+![currenciesFrequency](https://user-images.githubusercontent.com/118894144/209971947-b0fe4f61-43e9-4f50-ae8b-04cc77b567ae.png)
+
+Dataframe валютной динамики
+
+![dataframe](https://user-images.githubusercontent.com/118894144/209972065-ca63215e-79e3-4b59-8e6b-721e49928efb.png)
