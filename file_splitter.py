@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from csv import reader
 from datetime import datetime
+import cProfile
 
 _date_format: str = '%Y'
 _original_date_format: str = '%Y-%m-%dT%H:%M:%S+%f'
@@ -63,6 +64,13 @@ def csv_reader(file_name: str) -> (dict):
 
         return cooldict, data[0]
 
-
+profiler = cProfile.Profile()
+profiler.enable()
 cooldict = csv_reader("only_statistics.csv")
 splitFiles(cooldict)
+profiler.disable()
+profiler.dump_stats("example.stats")
+import pstats
+
+stats = pstats.Stats("example.stats").sort_stats("tottime")
+stats.print_stats()
