@@ -4,16 +4,19 @@ import currencty_convertator
 import report
 
 
-def prepare_data(vac_file_path: str, currencies_file_path = '', noconvert = True):
+def prepare_data(vac_file_path: str, currencies_file_path = '', noconvert = True, region_name = ''):
 
     vacancies = pd.read_csv(vac_file_path, delimiter=',')
+    work_frame = None
     if not noconvert:
         currencies = pd.read_csv(currencies_file_path, delimiter=',').set_index('Date').transpose().to_dict(orient='dict')
         work_frame = vacancies[['name', 'salary_from', 'salary_to', 'salary_currency', 'area_name', 'published_at']]
         work_frame = currencty_convertator.addSalaryInFrame(work_frame, currencies)
         work_frame = work_frame[work_frame['Salary'].notnull()]
+    work_frame = vacancies[vacancies['Salary'].notnull()]
+    if region_name == '':
         return work_frame
-    return vacancies[vacancies['Salary'].notnull()]
+    return work_frame[work_frame['area_name'] == region_name]
 
 
 # if __name__ == '__main__':
@@ -81,11 +84,12 @@ def getTownVacancies(prepared: pd.DataFrame):
 
 filename = input("Введите название файла: ")
 profession = input("Введите название профессии: ")
+region = input("Введите название региона: ")
 
 #использовать если нет сформированного фрейма с зарплатой
 #prepared = prepare_data(filename, 'monthly_currency.csv', noconvert=False)
 
-prepared = prepare_data(filename, noconvert=True)
+prepared = prepare_data(filename, noconvert=True, region_name=region)
 
 prepared['published_at'] = prepared['published_at'].apply(lambda x: int(str(x[0:4])))
 professional = prepared[prepared['name'].str.contains(profession, case=False)].copy()
