@@ -35,10 +35,57 @@ def example(engine, month):
     return getCurrencyForMonth(engine, month)
 
 
+def read_from_sql(engine, profession=''):
+    # Динамика уровня зарплат по годам
+    df = pd.read_sql(
+        "Select substr(published_at,1,4) as date, round(avg(Salary),3) as average from vacancies where salary not "
+        "null group by substr(published_at,1,4);",
+        engine)
+
+    # Динамика количества вакансий по годам
+    df1 = pd.read_sql(
+        "Select substr(published_at,1,4) as date, count(Salary) as cnt from vacancies where salary not null group by "
+        "substr(published_at,1,4);",
+        engine)
+
+    # Динамика уровня зарплат по годам для выбранной профессии
+    df2 = pd.read_sql(f"Select substr(published_at,1,4) as date, round(avg(Salary),3) \
+     as average from vacancies where (salary not null and name like '{profession}') group by substr(published_at,1,4);",
+                      engine)
+
+    # Динамика количества вакансий по годам для выбранной профессии
+    df3 = pd.read_sql("Select substr(published_at,1,4) as date, count(Salary) \
+           as cnt from vacancies where (salary not null and name = 'Программист') group by substr(published_at,1,4);",
+                      engine)
+
+    # Средняя з/п по городам
+    df4 = pd.read_sql("Select area_name,\
+      round(avg(Salary),3) as average\
+       from vacancies\
+        where (salary not null)\
+         group by area_name\
+          having 1.0 * count(*) / (select count(*) from vacancies where (salary not null)) > 0.01\
+           order by average DESC\
+           LIMIT 10;", engine)
+
+    # Доля вакансий по городам
+    df5 = pd.read_sql("Select area_name,\
+                      round(1.0 * count(*) / (SELECT COUNT(*) FROM vacancies where (salary not null)),4) as percentage\
+       from vacancies\
+        where (salary not null)\
+         group by area_name\
+           order by percentage DESC\
+           LIMIT 10;", engine)
+    return df, df1, df2, df3, df4, df5
+
+
 engine = create_engine('sqlite:///Vacancies.db', echo=False)
 
-example_row = example(engine, '2005-01')
-print(example_row)
+#example_row = example(engine, '2005-01')
+#print(example_row)
 # createDataBaseCurrencies()
 # insert_currencies()
+frames = read_from_sql(engine, 'Программист')
+for i in frames:
+    print(i.head(2))
 print('Работа выполнена студентом: Велиуллаев Владислав Маратович')
