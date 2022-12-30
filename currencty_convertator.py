@@ -2,14 +2,14 @@ import pandas as pd
 import numpy as np
 
 
-def setSalaryInDict(vacancy: dict, monthly_currencies: pd.DataFrame):
+def setSalaryInDict(vacancy: dict, monthly_currencies: dict):
     date = vacancy['published_at'][0:7]
     if pd.isnull(vacancy['salary_currency']):
         return
     coef = 1
     if vacancy['salary_currency'] in ['USD', 'KZT', 'BYR', 'UAH', 'EUR']:
         coef = monthly_currencies[date][vacancy['salary_currency']]
-        # print(coef)
+    # print(coef)
     if pd.isnull(vacancy['salary_from']):
         vacancy['Salary'] = vacancy['salary_to'] * coef
         return
@@ -17,7 +17,16 @@ def setSalaryInDict(vacancy: dict, monthly_currencies: pd.DataFrame):
         vacancy['Salary'] = vacancy['salary_from'] * coef
         return
     vacancy['Salary'] = (vacancy['salary_to'] + vacancy['salary_from']) / 2 * coef
-    return
+
+
+def addSalaryInFrame(vacancies: pd.DataFrame, monthly_currencies: pd.DataFrame):
+    vacancies.insert(1, 'Salary', value=[np.nan] * len(vacancies))
+    dicts = vacancies.transpose(copy=False).to_dict(orient='dict')
+    for i in dicts.keys():
+        setSalaryInDict(dicts[i], monthly_currencies=monthly_currencies)
+    reformed = pd.DataFrame.from_dict(dicts).transpose(copy=False).drop(
+        columns=['salary_from', 'salary_to', 'salary_currency'])
+    return reformed
 
 
 if __name__ == '__main__':

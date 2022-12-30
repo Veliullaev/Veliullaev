@@ -299,6 +299,7 @@ def merge_reports(first: Report, second: Report):
     salary_dynamic_by_year = first.get_salary_dynamic_by_year().update(second.get_vacancy_dynamic_by_year())
 
     #TODO: надо починить это дело
+    #TODO: не надо
     return Report(profession
                   =prof,
                   salary_dynamic_by_year
@@ -311,6 +312,3 @@ def merge_reports(first: Report, second: Report):
                   =first.get_vacancy_dynamic_by_year(),
                   vacancy_town={},
                   salary_town={})
-
-def another_merge_reports(first: Report, second: Report):
-    return
