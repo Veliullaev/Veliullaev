@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from sqlalchemy import create_engine
 
 def setSalaryInDict(vacancy: dict, monthly_currencies: dict):
     date = vacancy['published_at'][0:7]
@@ -10,6 +10,24 @@ def setSalaryInDict(vacancy: dict, monthly_currencies: dict):
     if vacancy['salary_currency'] in ['USD', 'KZT', 'BYR', 'UAH', 'EUR']:
         coef = monthly_currencies[date][vacancy['salary_currency']]
     # print(coef)
+    if pd.isnull(vacancy['salary_from']):
+        vacancy['Salary'] = vacancy['salary_to'] * coef
+        return
+    if pd.isnull(vacancy['salary_to']):
+        vacancy['Salary'] = vacancy['salary_from'] * coef
+        return
+    vacancy['Salary'] = (vacancy['salary_to'] + vacancy['salary_from']) / 2 * coef
+
+def setSalaryBySQL(vacancy: dict):
+    engine = create_engine('sqlite:///Vacancies.db', echo=False)
+    date = vacancy['published_at'][0:7]
+
+    if pd.isnull(vacancy['salary_currency']):
+        return
+    coef = 1
+    if vacancy['salary_currency'] in ['USD', 'KZT', 'BYR', 'UAH', 'EUR']:
+        currencies = pd.read_sql(f"SELECT * FROM 'currencies' where Date = '{date}'", engine)
+        coef = currencies.get(vacancy['salary_currency'])[0]
     if pd.isnull(vacancy['salary_from']):
         vacancy['Salary'] = vacancy['salary_to'] * coef
         return
