@@ -20,3 +20,7 @@ CSV парсер с возможностью формирования докум
 Dataframe валютной динамики
 
 ![dataframe](https://user-images.githubusercontent.com/118894144/209972065-ca63215e-79e3-4b59-8e6b-721e49928efb.png)
+
+Заполнение базы данных вакансиями и месячными валютными котировками
+
+![3 5 2_скриншот базы](https://user-images.githubusercontent.com/118894144/210090721-76289865-08ab-4253-b263-28ee55861bf6.png)
