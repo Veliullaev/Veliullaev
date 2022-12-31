@@ -3,6 +3,8 @@ from datetime import datetime
 import report
 import doctest
 
+"""OUTDATED: Новая версия на Pandas в cooler_statistics_creator"""
+
 
 class DataSet:
     """Класс для представления данных о вакансиях.
