@@ -7,10 +7,17 @@ def createDataBaseCurrencies():
     engine = create_engine('sqlite:///Vacancies.db', echo=False)
 
 
-def insert_currencies(filename='monthly_currency.csv'):
+def insert_table(filename='monthly_currency.csv', tablename='currencies'):
+    """
+    Вставка таблицы, прямое преобразование из csv в таблицу SQlite
+
+    :param filename: имя файла
+    :param tablename: название таблицы
+    :return: None
+    """
     df = pd.read_csv(filename, delimiter=',')
     engine = create_engine('sqlite:///Vacancies.db', echo=False)
-    df.to_sql('currencies', con=engine, index=False)
+    df.to_sql(tablename, con=engine, index=False)
 
 
 def getCurrencyForMonth(engine, month):
@@ -85,7 +92,8 @@ engine = create_engine('sqlite:///Vacancies.db', echo=False)
 #print(example_row)
 # createDataBaseCurrencies()
 # insert_currencies()
-frames = read_from_sql(engine, 'Программист')
-for i in frames:
-    print(i.head(2))
+#frames = read_from_sql(engine, 'Программист')
+#for i in frames:
+#    print(i.head(2))
+insert_table('monthly_currencies.csv')
 print('Работа выполнена студентом: Велиуллаев Владислав Маратович')

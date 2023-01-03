@@ -2,60 +2,51 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 
-def setSalaryInDict(vacancy: dict, monthly_currencies: dict):
-    date = vacancy['published_at'][0:7]
-    if pd.isnull(vacancy['salary_currency']):
-        return
-    coef = 1
-    if vacancy['salary_currency'] in ['USD', 'KZT', 'BYR', 'UAH', 'EUR']:
-        coef = monthly_currencies[date][vacancy['salary_currency']]
-    # print(coef)
-    if pd.isnull(vacancy['salary_from']):
-        vacancy['Salary'] = vacancy['salary_to'] * coef
-        return
-    if pd.isnull(vacancy['salary_to']):
-        vacancy['Salary'] = vacancy['salary_from'] * coef
-        return
-    vacancy['Salary'] = (vacancy['salary_to'] + vacancy['salary_from']) / 2 * coef
+def fasterSalaryFromPositions(df: pd.DataFrame, currs):
+    df['published_at'] = df['published_at'].str[0:7]
+    eng = create_engine('sqlite:///Vacancies.db', echo=False)
+    currencies = pd.read_sql('select * from currencies', eng)
+    currencies = currencies.rename(columns={'Date':'published_at'})
 
-def setSalaryBySQL(vacancy: dict):
-    engine = create_engine('sqlite:///Vacancies.db', echo=False)
-    date = vacancy['published_at'][0:7]
+    print(currencies.head(5))
 
-    if pd.isnull(vacancy['salary_currency']):
-        return
-    coef = 1
-    if vacancy['salary_currency'] in ['USD', 'KZT', 'BYR', 'UAH', 'EUR']:
-        currencies = pd.read_sql(f"SELECT * FROM 'currencies' where Date = '{date}'", engine)
-        coef = currencies.get(vacancy['salary_currency'])[0]
-    if pd.isnull(vacancy['salary_from']):
-        vacancy['Salary'] = vacancy['salary_to'] * coef
-        return
-    if pd.isnull(vacancy['salary_to']):
-        vacancy['Salary'] = vacancy['salary_from'] * coef
-        return
-    vacancy['Salary'] = (vacancy['salary_to'] + vacancy['salary_from']) / 2 * coef
+    
+    #Определяем, что у нас nullValues на зарплатах от и до
+    
+    null_sal_to = df['salary_to'].isnull()
+    null_sal_from = df['salary_from'].isnull()
+    corr_sals = ~(df['salary_from'].isnull() | df['salary_to'].isnull())
+
+    df.loc[null_sal_to, 'Salary'] = df.loc[null_sal_to, 'salary_from']
+    df.loc[null_sal_from, 'Salary'] = df.loc[null_sal_from, 'salary_to']
+    df.loc[corr_sals, 'Salary'] = (df.loc[corr_sals, 'salary_from'] + df.loc[corr_sals, 'salary_to']) / 2 
+    df = pd.merge(df, currencies, how='inner',on='published_at')
+    print(df.head(5))
+    bread = df.to_dict(orient='records')
+    for i in bread:
+        if i['salary_currency'] in currs:
+            i['Salary'] = i['Salary'] * i[i['salary_currency']]
+    ech = pd.DataFrame.from_records(bread)
+    ech = ech[['name','Salary','area_name','published_at']]
+    return ech
 
 
-def addSalaryInFrame(vacancies: pd.DataFrame, monthly_currencies: pd.DataFrame):
-    vacancies.insert(1, 'Salary', value=[np.nan] * len(vacancies))
-    dicts = vacancies.transpose(copy=False).to_dict(orient='dict')
-    for i in dicts.keys():
-        setSalaryInDict(dicts[i], monthly_currencies=monthly_currencies)
-    reformed = pd.DataFrame.from_dict(dicts).transpose(copy=False).drop(
-        columns=['salary_from', 'salary_to', 'salary_currency'])
-    return reformed
+engine = create_engine('sqlite:///Vacancies.db', echo=False)
 
-
-if __name__ == '__main__':
+if __name__ == '__main__':  
+    print('Reading vacancies csv...')
     raw_vacs = pd.read_csv('vacancies_dif_currencies.csv', delimiter=',')
-    monthly_currencies = pd.read_csv('monthly_currency.csv', delimiter=',')
 
-    raw_vacs.insert(1, 'Salary', value=[np.nan] * len(raw_vacs))
-    dicts = raw_vacs.transpose(copy=False)
-    monthly_dict = monthly_currencies.set_index('Date').transpose().to_dict(orient='dict')
-    for i in dicts.keys():
-        setSalaryInDict(dicts[i], monthly_currencies=monthly_dict)
-    reformed = pd.DataFrame.from_dict(dicts).transpose(copy=False) \
-        .drop(columns=['salary_from', 'salary_to', 'salary_currency'])
+    print('Completed! Length: ' + str(len(raw_vacs)))
+
+
+    currs = pd.read_sql("PRAGMA table_info(currencies)",engine)['name']
+    currs = currs[currs != 'Date'].to_list()
+
+    print('inserting column and removing null from salary_currency...')
+    raw_vacs = raw_vacs[raw_vacs['salary_currency'].notnull()]
+    print('Completed! Length: ' + str(len(raw_vacs)))
+    print('Converting vacancies to wholesome data')
+    reformed = fasterSalaryFromPositions(raw_vacs, currs)
+    print('Completed!')
     reformed.to_csv('wholesome_vacancies_data.csv', index=False)
